@@ -5,23 +5,20 @@
 \set ON_ERROR_STOP on
 SET client_encoding = 'UTF8';
 
--- Dump de mmes resultats pour livraison aux etudiants
+-- Dump de mes resultats pour livraison aux etudiants
 --pg_dump -E UTF8 -U dba_pg15 -O -v -x -w --format=p -t geonum_capi.data
 create schema if not exists geonum_capi ;
 
 --create table if not exists geonum_capi.data as
 --> disable > la table est cree pour la premiere execution, puis on utilise la commande qui suit
-drop table if exists geonum_capi.data ;
-create table if not exists geonum_capi.data as
+drop table if exists geonum_capi.data;
+drop table if exists geonum_capi.zonage_urbain;
 
--- select *
--- from geonum_reference.zonage_urbanisme
--- where typezone in ('AUc', 'Aus', 'U');
-
-select
+create table geonum_capi.zonage_urbain_capi as
+    select
     (st_dump(st_union(geom))).geom as geom
-    from geonum_capi.data where typezone similar to '(AUc|Aus|U)'
-    where typezone similar to '(U|AU%%)'
+    from geonum_reference.zonage_urbanisme zu
+    where typezone in ('AUc', 'Aus', 'U');
 
 
 -- Etape 1 : Création du masque bâtiment
