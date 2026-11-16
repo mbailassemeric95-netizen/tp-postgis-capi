@@ -1,9 +1,27 @@
 -- Etape 0 : Détermination de l’emprise du territoire d’identification du gisement
-create schema if not exists geonum_gst;
-create table geonum_gst.zonage_urbain as
-select geom
-from geonum_reference.zonage_urbanisme
-where typezone in ('AUs', 'Aus', 'U');
+----------------------------
+
+-- créer un schéma pour y stocker les tables hébergeant nos requetes
+\set ON_ERROR_STOP on
+SET client_encoding = 'UTF8';
+
+-- Dump de mmes resultats pour livraison aux etudiants
+--pg_dump -E UTF8 -U dba_pg15 -O -v -x -w --format=p -t geonum_capi.data
+create schema if not exists geonum_capi ;
+
+--create table if not exists geonum_capi.data as
+--> disable > la table est cree pour la premiere execution, puis on utilise la commande qui suit
+drop table if exists geonum_capi.data ;
+create table if not exists geonum_capi.data as
+
+-- select *
+-- from geonum_reference.zonage_urbanisme
+-- where typezone in ('AUc', 'Aus', 'U');
+
+select
+    (st_dump(st_union(geom))).geom as geom
+    from geonum_capi.data where typezone similar to '(AUc|Aus|U)'
+    where typezone similar to '(U|AU%%)'
 
 
 -- Etape 1 : Création du masque bâtiment
