@@ -28,13 +28,43 @@ join geonum_capi.emprise_capi ec
 on st_intersects(ec.geom, zu.geom)
 where zu.typezone in ('AUc', 'AUs', 'U');
 
+create index gx_zonage_urbain_capi on geonum_capi.zonage_urbain_capi using gist(geom);
+
+drop table if exists geonum_capi.route_capi;
+create table geonum_capi.masque_voirie as
+
+with route_capi as(
+select ro.ogc_fid, 'route'::text as categorie, ro.highway as type_voie, ro.geom
+from geonum_capi.emprise_capi as ec
+join geonum_reference.osm_road ro
+on st_intersects(ro.geom, ec.geom)
+
+union all
+
+select ra.ogc_fid, 'rail' ::text as categorie, 'rail'::text as type_voie, ra.geom
+from geonum_capi.emprise_capi as ec
+join geonum_reference.osm_railway ra
+on st_intersects(ra.geom, ec.geom)
+)
+
+select ogc_fid, categorie, type_voie,
+    case
+        when type_voie in ('rail', 'motorway', 'primary', 'secondary', 'tertiary') then st_buffer(geom, 15)
+        else st_buffer(geom, 7)
+    end as geom
+from route_capi;
+
+create index gx_masque_voirie on geonum_capi.masque_voirie using gist (geom);
+
 
 
 
 -- Etape 1 : Création du masque bâtiment
 -- Adaptation du masque selon la taille du bati (2m <50m² sinon 50m)
--- Etape 2 : Création du masque des infrastructures linéaires (route, rail)
--- Adaptation du masque selon l’importance de l’infra linéaire (15m pour voirie principal et rail, 7m voirie secondaire)
+-- Etape 2 : Création du masque des infrastructures linéaires 
+-- (route, rail)
+-- Adaptation du masque selon l’importance de l’infra linéaire 
+-- (15m pour voirie principal et rail, 7m voirie secondaire)
 
 -- Etape 3 : Création du masque des équipements et des spécificités du territoire
 -- Etape 4 : Identification des parcelles candidates
