@@ -12,6 +12,7 @@ create schema if not exists geonum_capi ;
 --create table if not exists geonum_capi.data as
 --> disable > la table est cree pour la premiere execution, puis on utilise la commande qui suit
 
+--Création de l'emprise de la zone d'étude
 drop table if exists geonum_capi.emprise_capi;
 create table geonum_capi.emprise_capi as
 select *
@@ -21,8 +22,9 @@ where epci = '243800604';
 -- drop table if exists geonum_capi.data;
 drop table if exists geonum_capi.zonage_urbain_capi;
 
+-- Création masque pour le zonage urbain
 create table geonum_capi.zonage_urbain_capi as
-select (st_dump(st_union(zu.geom))).geom as geom
+select (st_dump((st_union(zu.geom)))).geom as geom
 from geonum_reference.zonage_urbanisme zu
 join geonum_capi.emprise_capi ec
 on st_intersects(ec.geom, zu.geom)
@@ -30,7 +32,8 @@ where zu.typezone in ('AUc', 'AUs', 'U');
 
 create index gx_zonage_urbain_capi on geonum_capi.zonage_urbain_capi using gist(geom);
 
-drop table if exists geonum_capi.route_capi;
+-- Création du masque pour la voirie
+drop table if exists geonum_capi.masque_voirie;
 create table geonum_capi.masque_voirie as
 
 with route_capi as(
@@ -55,7 +58,6 @@ select ogc_fid, categorie, type_voie,
 from route_capi;
 
 create index gx_masque_voirie on geonum_capi.masque_voirie using gist (geom);
-
 
 
 
