@@ -32,6 +32,20 @@ where zu.typezone in ('AUc', 'AUs', 'U');
 
 create index gx_zonage_urbain_capi on geonum_capi.zonage_urbain_capi using gist(geom);
 
+-- Etape 1 : Création du masque bâtiment
+-- Adaptation du masque selon la taille du bati (2m <50m² sinon 50m)
+drop table if exists geonum_capi.batiment;
+create table geonum_capi.batiment as
+select st_intersection(bat.geom, emp.geom) as geom, bat.nature, bat.usage_1
+from geonum_reference.bdtopo_batiment as bat
+inner join geonum_capi.zonage_urbain_capi as emp
+on st_intersects(bat.geom, emp.geom);
+create index gx_batiment_v2 on geonum_capi.batiment_v2 using gist(geom);
+
+-- Etape 2 : Création du masque des infrastructures linéaires 
+-- (route, rail)
+-- Adaptation du masque selon l’importance de l’infra linéaire 
+-- (15m pour voirie principal et rail, 7m voirie secondaire)
 -- Création du masque pour la voirie
 drop table if exists geonum_capi.masque_voirie;
 create table geonum_capi.masque_voirie as
@@ -59,16 +73,15 @@ from route_capi;
 
 create index gx_masque_voirie on geonum_capi.masque_voirie using gist (geom);
 
-
-
--- Etape 1 : Création du masque bâtiment
--- Adaptation du masque selon la taille du bati (2m <50m² sinon 50m)
--- Etape 2 : Création du masque des infrastructures linéaires 
--- (route, rail)
--- Adaptation du masque selon l’importance de l’infra linéaire 
--- (15m pour voirie principal et rail, 7m voirie secondaire)
-
 -- Etape 3 : Création du masque des équipements et des spécificités du territoire
+drop table if exists geonum_capi.equipement;
+create table geonum_capi.equipement as
+select st_intersection(cim.geom, emp.geom) as geom
+from geonum_reference.bdtopo_cimetiere as cim
+inner join geonum_capi.zonage_urbain_capi as emp
+on st_intersects(cim.geom, emp.geom);
+create index gx_cimetiere on geonum_capi.equipement using gist(geom);
+
 -- Etape 4 : Identification des parcelles candidates
 -- Etape 5 : Identification du gisement non bâti
 -- Etape 7 : Mise en forme de la couche finale
